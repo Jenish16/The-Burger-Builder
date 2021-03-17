@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react';
 import { Route, Switch, withRouter,Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
 
@@ -6,29 +6,28 @@ import Layout from './hoc/Layout/Layout';
 import BurgerBuilder from './containers/BurgerBuilder/BurgerBuilder';
 import Logout from './containers/Auth/Logout/Logout';
 import * as actions from './store/actions/index';
-import asyncComponent from './hoc/asyncComponent/asyncComponent';
 
-const asyncCheckout = asyncComponent(() => {
+const Checkout = React.lazy(() => {
   return import('./containers/Checkout/Checkout');
 });
 
-const asyncOrders = asyncComponent(() => {
+const Orders = React.lazy(() => {
   return import('./containers/Orders/Orders');
 });
 
-const asyncAuth = asyncComponent(() => {
+const Auth = React.lazy(() => {
   return import('./containers/Auth/Auth');
 });
 
-const app = props => {
-
-  useEffect(()=>{
-    props.onTryAutoSignup();
-  },[])
+const App = props => {
+  const { onTryAutoSignup } = props;
+  useEffect( () => {
+    onTryAutoSignup();
+  },[onTryAutoSignup])
 
     let routes = (
       <Switch>
-        <Route path="/auth" component={asyncAuth}  />
+        <Route path="/auth" render = {( props ) => <Auth {...props}/> } />
         <Route path="/" exact component={BurgerBuilder}  />
         <Redirect to="/"/>
       </Switch>
@@ -39,23 +38,25 @@ const app = props => {
       routes=(
         <Switch>
           
-          <Route path="/checkout" component={asyncCheckout}  />
-          <Route path="/orders" exact component={asyncOrders}  />
+          <Route path="/checkout" render = {( props ) => <Checkout {...props}/> } />
+          <Route path="/orders" exact render = {( props ) => <Orders {...props}/> } />
           <Route path="/logout" component={Logout}  />
-          <Route path="/auth" component={asyncAuth}  />
+          <Route path="/auth" render = {( props ) => <Auth {...props}/> } />
           <Route path="/" exact component={BurgerBuilder}  />
           <Redirect to="/"/>
         </Switch>
       )
     }
 
-    return (
-      <div>
-        <Layout>
-          {routes}
-        </Layout>      
-      </div>
-    );
+  return (
+    <div>
+      <Layout>
+        <Suspense fallback={<p>Loading....</p>}>
+          {routes} 
+        </Suspense>
+      </Layout>      
+    </div>
+  );
 }
 
 const mapStateToProps = state => {
@@ -70,4 +71,4 @@ const mapDispatchToProps = dispatch => {
   }
 }
 
-export default withRouter(connect(mapStateToProps,mapDispatchToProps)(app));
+export default withRouter(connect(mapStateToProps,mapDispatchToProps)(App));
